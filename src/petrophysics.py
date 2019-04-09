@@ -73,9 +73,11 @@ def calculate_clay_value(data):
 
     if not data['NPHI (v/v)'].isnull().any():
 
-        neutron_sh = data.loc[data['GR (API)']==upper]
+        neutron_sh = data.loc[data['GR (API)'] == max(data['GR (API)']), 'NPHI (v/v)']
 
         clay_values.append((data['NPHI (v/v)'].values) / neutron_sh
+
+    return [np.mean(a, b) for a, b in zip(clay_values[0], clay_values[1]))] if len(clay_values) == 2 else np.mean(clay_values[0])
 
 
 
