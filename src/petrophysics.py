@@ -14,7 +14,8 @@ JSON example:
         "fluid_dt": 8.93,
         "a": 7.45,
         "m": 3.2,
-        "n": 2.83
+        "n": 2.83,
+        "rw": 0.05
     },
 
     {
@@ -24,7 +25,8 @@ JSON example:
         "fluid_density": 10.3,
         "a": 7.45,
         "m": 3.2,
-        "n": 2.83
+        "n": 2.83,
+        "rw": 0.07
     }
 ]
 
@@ -40,23 +42,23 @@ import json
 
 PATH_TO_CSV = '../data/interim/extracted-1.csv'
 MANDATORY_COLUMNS = ['#Depth (#M)', 'GR (API)', 'RT (ohm.m)', 'NPHI (v/v)', 'RHOB (g/cm3)']
-REGION_LIMITS = [0, 866.5, 1366.5, 2217, 2785, 3655, 4770.2]
 
 formations = [] #List of dictionaries, each being a formation.
 
 
 data = pd.read_csv(PATH_TO_CSV)
 
-def check_data_columns(data):
+def clean_data_columns(data):
 
-    return False if data[MANDATORY_COLUMNS].isnull().any() else True
+    #   Do not drop all the column, but the rows with missing values on the mandatory columns.
+    return data.dropna(subset=MANDATORY_COLUMNS)
 
 
 def region_asignation(formations):
 
     for i, formation in enumerate(formations):
 
-        formations[i]['data'] = formation.get('high_depth') <= data.loc[data['#Depth (#M)'] < formation.get('low_depth')
+        formations[i]['data'] = data.loc[(data['#Depth (#M)']>=formation.get('high_depth')) & (data['#Depth (#M)']<formation.get('low_depth'))] 
 
     return formations
 
@@ -77,22 +79,11 @@ def calculate_clay_value(data):
 
         clay_values.append((data['NPHI (v/v)'].values) / neutron_sh
 
-    return [np.mean(a, b) for a, b in zip(clay_values[0], clay_values[1]))] if len(clay_values) == 2 else np.mean(clay_values[0])
+    return [np.mean(a, b) for a, b in zip(clay_values[0], clay_values[1]))] if len(clay_values) == 2 else clay_values[0]
 
 
-
-
-
-"""
-
-3. Definir parametros iniciales		
-Densidad fluido		0.9
-DT Fluido		
-a		1
-m		2.45
-n		2.45
-
-"""
-
+def calculate_porosity(data):
+    
+    matrix_density = [2.71 if den>2.6 else 2.644 for den in data.loc[:, 'RHOB (g/cm3)'].values]
 
 
